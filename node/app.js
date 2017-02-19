@@ -198,7 +198,7 @@ function novaConversaWatson (mensagem, user) {
  */
 function receivedMessage(event) {
   var senderID = event.sender.id;
-  var message = event.message;
+  var message = event.message.text;
 
   var gui = '1258902457533886';
   var cinzia = '985149618251985';
