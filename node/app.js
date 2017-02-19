@@ -203,13 +203,7 @@ function receivedMessage(event) {
   var gui = '1258902457533886';
   var cinzia = '985149618251985';
 
-  if(senderID == gui)
-    console.log('Sou eu, seu mestre.');
-
-  if (senderID == cinzia)
-    console.log('Olá mamãe')
-
-  sendTextMessage(senderID, "Olar mestre");
+  if(senderID == gui) novaConversaWatson(message, senderID);
 }
 
 /*
@@ -246,11 +240,9 @@ function callSendAPI(messageData) {
       var messageId = body.message_id;
 
       if (messageId) {
-        console.log("Mensagem enviada.", 
-          messageId, recipientId);
+        console.log("Mensagem enviada.");
       } else {
-      console.log("Successfully called Send API for recipient %s", 
-        recipientId);
+      console.log("Successfully called Send API for recipient");
       }
     } else {
       console.error("Failed calling Send API", response.statusCode, response.statusMessage, body.error);
