@@ -162,6 +162,37 @@ function receivedAuthentication(event) {
   sendTextMessage(senderID, "Authentication successful");
 }
 
+var contexto = '';
+var respostaWatson = 'Ainda não deu mas ta quase.';
+var watson = require('watson-developer-cloud');
+
+var conversation = watson.conversation({
+  'url': 'https://gateway.watsonplatform.net/conversation/api',
+  'username': '6ff2ea91-b11f-43f3-90dd-4c3f1b1f916a',
+  'password': 'N3rkkMFt1rJO',
+  'version': 'v1',
+  'version_date': '2017-02-03'
+});
+
+function novaConversaWatson (mensagem, user) {
+  var context = contexto ? contexto : {};
+
+  return conversation.message({
+      input: { text: mensagem },
+      workspace_id: 'a9916a8f-a2c2-4b17-9484-3e53491f3b3c',
+      context: context
+    }, function(err, response) {
+      if (err) {
+        console.error(err);
+      } else {
+        contexto = response.context;
+        respostaWatson = response.output.text[0];
+
+        sendTextMessage(user, respostaWatson);
+       }
+    });
+}
+
 /*
  * Message Event
  */
