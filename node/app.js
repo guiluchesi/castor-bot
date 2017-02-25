@@ -45,6 +45,11 @@ const SERVER_URL = (process.env.SERVER_URL) ?
   (process.env.SERVER_URL) :
   config.get('serverURL');
 
+// Generate a page access token for your page from the App Dashboard
+const LIFX_KEY = (process.env.LIFX_KEY) ?
+  process.env.LIFX_KEY :
+  config.get('lifxKey');
+
 if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
   console.error("Missing config values");
   process.exit(1);
@@ -162,9 +167,19 @@ function receivedAuthentication(event) {
   sendTextMessage(senderID, "Authentication successful");
 }
 
-var contexto = '';
+const watson = require('watson-developer-cloud');
+const lifxAPI = 'https://api.lifx.com/v1/lights/'; //state
 var respostaWatson = 'Ainda não deu mas ta quase.';
-var watson = require('watson-developer-cloud');
+var contexto = '';
+const lampadas = {
+  casa: '87ba92e708076fc05fac1ff07d576f24',
+  frente: '1338000958f9d7dc7a5e6cbda500f84d',
+  sala: 'd073d512fd13',
+  garagem: 'd073d512be77',
+  quartos: '8090ac642b1c5f83b1efa2831b3a3177',
+  quarto: 'd073d5130547',
+  quartoCasal: 'd073d512f5bc'
+};
 
 var conversation = watson.conversation({
   'url': 'https://gateway.watsonplatform.net/conversation/api',
@@ -187,10 +202,72 @@ function novaConversaWatson (mensagem, user) {
       } else {
         contexto = response.context;
         respostaWatson = response.output.text[0];
+        var acao = response.intents.length > 0 ? response.intents[0].intent : '';
+        var objeto = response.entities.length > 0 ? response.entities[0].value : '';
+        var novoEstado = encontraAcao(acao) ? encontraAcao(acao) : '';
+
+        if(encontraAmbiente(objeto)) trocaEstadoDaLampada(lampadas[encontraAmbiente(objeto)], { power: novoEstado});
 
         sendTextMessage(user, respostaWatson);
        }
     });
+}
+
+function trocaEstadoDaLampada(lampada, estados) {
+  request({
+    uri: lifxAPI + lampada + '/state',
+    headers: { Authorization: LIFX_KEY },
+    method: 'PUT',
+    json: estados
+  }, function (error, response, body) {
+    console.log('Resposta:', response);
+    if (!error && response.statusCode == 200)
+      console.log('Estado da lampada alterado.')
+    else
+      console.error("Erro na chamada de API da Lifx.", response.statusCode, response.statusMessage, body.error);
+  });
+}
+
+function encontraAcao(acao){
+  switch (acao){
+    case 'acender_luzes':
+      return 'on';
+      break;
+
+    case 'apagar_luzes':
+      return 'off';
+      break;
+
+    default:
+      return false;
+  }
+}
+
+function encontraAmbiente(ambiente){
+  switch (ambiente){
+    case 'cafofo':
+      return 'quarto';
+      break;
+
+    case 'ninho':
+      return 'quartoCasal';
+      break;
+
+    case 'sala':
+      return 'sala';
+      break;
+
+    case 'garagem':
+      return 'garagem';
+      break;
+
+    case 'casa':
+      return 'casa';
+      break;
+
+    default:
+      return false;
+  }
 }
 
 /*
